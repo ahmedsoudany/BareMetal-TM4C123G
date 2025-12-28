@@ -1,0 +1,24 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+
+        {
+             "name": "Debug (OpenOCD)",
+            "type": "cortex-debug",
+            "request": "launch",
+            "servertype": "openocd",
+            "cwd": "${workspaceFolder}",
+            "executable": "${workspaceFolder}/build/blinky.elf",
+            "device": "TM4C123GH6PM",
+            "configFiles": [
+                "board/ek-tm4c123gxl.cfg"
+            ],
+            "runToEntryPoint": "main",
+            "showDevDebugOutput": "none",
+            
+            // --- ADD THIS LINE ---
+            "gdbPath": "C:/EmbeddedTools/arm-gnu-toolchain-15.2.rel1-mingw-w64-i686-arm-none-eabi/bin/arm-none-eabi-gdb.exe"
+            
+        }
+    ]
+}
