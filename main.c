@@ -1,5 +1,3 @@
-#include "tm4c123gh6pm_minimal.h"
-
 int main() {
     // 1. Enable Clock for Port F (Bit 5)
     // 0x400FE608 is the address of the RCGCGPIO register
