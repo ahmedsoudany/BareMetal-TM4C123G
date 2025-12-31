@@ -18,6 +18,7 @@ void Default_Handler(void) {
 // 2. Declare the prototype for our specific ISR
 // "Weak" alias means: if we don't define this function in main.c, use Default_Handler.
 void GPIOF_Handler(void) __attribute__((weak, alias("Default_Handler")));
+void Timer0A_Handler(void) __attribute__((weak, alias("Default_Handler")));
 
 // Reset Handler: The first function to run
 void Reset_Handler(void) {
@@ -37,6 +38,7 @@ void Reset_Handler(void) {
     // 3. Jump to main
     main();
 }
+
 
 // 3. The Vector Table
 // We must place GPIOF_Handler in the correct physical slot (Index 46)
@@ -75,7 +77,7 @@ void (*const g_pfnVectors[])(void) = {
     Default_Handler, // ADC0 Sequence 2
     Default_Handler, // ADC0 Sequence 3
     Default_Handler, // Watchdog timer
-    Default_Handler, // Timer 0 subtimer A
+    Timer0A_Handler, // Timer 0 subtimer A
     Default_Handler, // Timer 0 subtimer B
     Default_Handler, // Timer 1 subtimer A
     Default_Handler, // Timer 1 subtimer B

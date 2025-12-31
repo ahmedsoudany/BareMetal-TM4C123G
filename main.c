@@ -1,70 +1,64 @@
 #include "tm4c123gh6pm_minimal.h"
 
-// --- 1. The Interrupt Service Routine (ISR) ---
-// This function is called AUTOMATICALLY by the hardware when the button is pressed.
-// The name MUST match the one in startup.c exactly.
-void GPIOF_Handler(void) {
-    // A. Check if the interrupt was caused by Pin 4 (Switch 1)
-    // We check the Masked Interrupt Status (MIS) register.
-    if (GPIOF->MIS & (1U << 4)) {
-        
-        // B. Clear the Interrupt Flag (CRITICAL!)
-        // If we don't do this, the ISR will run again immediately forever.
-        GPIOF->ICR |= (1U << 4);
+// --- The Timer ISR ---
+// This runs automatically every 0.5 seconds
+void Timer0A_Handler(void) {
 
-        // C. Toggle the Red LED (Pin 1)
-        // We use XOR (^) to flip the bit.
-        // Note: We write to the "All Bits" data address (0x3FC)
+    // 1. Check: Did a Time-Out occur? (Bit 0 of Masked Interrupt Status)
+    if(TIMER0->MIS & (1U << 0)) {
+        // 2. Clear the Interrupt Flag (TATOCINT - Bit 0)
+        // If we don't do this, it will loop forever!
+        TIMER0->ICR |= (1U << 0);
+
+        // 3. Toggle Red LED (PF1)
         GPIOF->DATA ^= (1U << 1);
+
     }
 }
 
 int main() {
-    // --- Hardware Setup ---
-
-    // 1. Enable Clock for Port F
-    SYSCTL_RCGCGPIO |= (1U << 5); 
-    
-    // 2. Small delay
+    // --- GPIO Setup (Standard Blinky Stuff) ---
+    SYSCTL_RCGCGPIO |= (1U << 5); // Enable Port F
     volatile unsigned int delay = SYSCTL_RCGCGPIO;
     (void)delay;
 
-    // 3. Set PF1 (LED) as Output
-    GPIOF->DIR |= (1U << 1);
+    GPIOF->DIR |= (1U << 1);      // PF1 Output
+    GPIOF->DEN |= (1U << 1);      // PF1 Digital Enable
 
-    // 4. Set PF4 (Switch) as Input (Clear bit 4)
-    GPIOF->DIR &= ~(1U << 4);
-
-    // 5. Enable Pull-Up Resistor for PF4 (Switch needs this!)
-    GPIOF->PUR |= (1U << 4);
+    // --- Timer Setup (The New Stuff) ---
     
-    // 6. Enable Digital Function for PF1 and PF4
-    GPIOF->DEN |= ((1U << 1) | (1U << 4));
+    // 1. Enable Clock for Timer 0
+    SYSCTL_RCGCTIMER |= (1U << 0); 
+    delay = SYSCTL_RCGCTIMER; // Wait for clock to stabilize
+    (void)delay;
 
-    // --- Interrupt Configuration ---
+    // 2. Disable Timer 0A during setup (Clear Bit 0)
+    TIMER0->CTL &= ~(1U << 0);
 
-    // 7. Disable interrupts on PF4 locally while we configure
-    GPIOF->IM &= ~(1U << 4);
+    // 3. Configure for 32-bit mode (Write 0 to bits 0-2)
+    TIMER0->CFG = 0x00000000;
 
-    // 8. Configure Trigger: Edge Sensitive, Not Both Edges, Falling Edge
-    GPIOF->IS  &= ~(1U << 4); // 0 = Edge sensitive
-    GPIOF->IBE &= ~(1U << 4); // 0 = Controlled by IEV
-    GPIOF->IEV &= ~(1U << 4); // 0 = Falling Edge (Press)
+    // 4. Configure for Periodic Mode (Write 0x2 to TAMR)
+    // Bit 1:0 = 0x2 (Periodic)
+    // Bit 4 = 1 (Count Up? No, keep 0 for Count Down)
+    TIMER0->TAMR = 0x00000002;
 
-    // 9. Clear any prior fake interrupts
-    GPIOF->ICR |= (1U << 4);
+    // 5. Set the Load Value (16,000,000 cycles = 1 second)
+    // We want 0.5 seconds -> 8,000,000
+    TIMER0->TAILR = 8000000;
 
-    // 10. Enable (Unmask) interrupt for PF4 locally
-    GPIOF->IM |= (1U << 4);
+    // 6. Enable Timer 0A Time-Out Interrupt (Bit 0)
+    TIMER0->IMR |= (1U << 0);
 
-    // 11. Enable IRQ 30 in the NVIC (The Master Switch)
-    // IRQ 30 corresponds to GPIO Port F
-    NVIC_EN0 |= (1U << 30);
+    // 7. Enable IRQ 19 in NVIC
+    NVIC_EN0 |= (1U << 19);
 
-    // --- The Main Loop ---
+    // 8. Enable Timer 0A (Set Bit 0)
+    TIMER0->CTL |= (1U << 0);
+
+    // --- Main Loop ---
     while(1) {
-        // Do NOTHING.
-        // The CPU can sleep here, or do complex math.
-        // The LED toggling happens "in the background" via the ISR.
+        // The CPU is free! 
+        // The LED is blinking automatically in the background.
     }
 }

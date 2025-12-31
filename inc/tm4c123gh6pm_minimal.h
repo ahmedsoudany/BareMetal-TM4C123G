@@ -51,6 +51,33 @@ typedef struct {
 // 2. Cast that address to our Struct Pointer
 #define GPIOF  ((GPIO_Type *)GPIO_PORTF_BASE)
 
+// ============================================================================
+// Timer Peripheral Definition
+// ============================================================================
+
+typedef struct {
+    volatile uint32_t CFG;           // 0x000: Configuration
+    volatile uint32_t TAMR;          // 0x004: Timer A Mode
+    volatile uint32_t TBMR;          // 0x008: Timer B Mode (We won't use this yet, but it fills the gap)
+    volatile uint32_t CTL;           // 0x00C: Control
+    volatile uint32_t SYNC;          // 0x010: Synchronize (Fills gap)
+    volatile uint32_t RESERVED[1];   // 0x014: Reserved space (4 bytes)
+    volatile uint32_t IMR;           // 0x018: Interrupt Mask
+    volatile uint32_t RIS;           // 0x01C: Raw Interrupt Status
+    volatile uint32_t MIS;           // 0x020: Masked Interrupt Status
+    volatile uint32_t ICR;           // 0x024: Interrupt Clear
+    volatile uint32_t TAILR;         // 0x028: Timer A Interval Load
+
+} Timer_Type;
+
+// ============================================================================
+// Timer Memory Mapping
+// ============================================================================
+
+#define TIMER0_BASE      0x40030000
+#define TIMER0           ((Timer_Type *)TIMER0_BASE)
+
+
 
 // ============================================================================
 // System Control (Clock) Definition
@@ -59,6 +86,9 @@ typedef struct {
 // For the clock, we'll just define the specific register pointer for now
 // Base: 0x400FE000, Offset: 0x608
 #define SYSCTL_RCGCGPIO  (*((volatile uint32_t *)0x400FE608))
+
+// System Control for Timers (Base 0x400FE000 + Offset 0x604)
+#define SYSCTL_RCGCTIMER (*((volatile uint32_t *)0x400FE604))
 
 // NVIC Enable Register 0 (Controls IRQ 0 to 31)
 // Base: 0xE000E000, Offset: 0x100
