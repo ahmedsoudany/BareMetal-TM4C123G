@@ -17,48 +17,71 @@ void Timer0A_Handler(void) {
 }
 
 int main() {
-    // --- GPIO Setup (Standard Blinky Stuff) ---
+    // 1. Enable clock for GPIO
     SYSCTL_RCGCGPIO |= (1U << 5); // Enable Port F
     volatile unsigned int delay = SYSCTL_RCGCGPIO;
     (void)delay;
 
-    GPIOF->DIR |= (1U << 1);      // PF1 Output
-    GPIOF->DEN |= (1U << 1);      // PF1 Digital Enable
-
-    // --- Timer Setup (The New Stuff) ---
-    
-    // 1. Enable Clock for Timer 0
+     // 2. Enable Clock for Timer 0
     SYSCTL_RCGCTIMER |= (1U << 0); 
     delay = SYSCTL_RCGCTIMER; // Wait for clock to stabilize
     (void)delay;
 
-    // 2. Disable Timer 0A during setup (Clear Bit 0)
-    TIMER0->CTL &= ~(1U << 0);
+    // 3. Disable PF1
+    GPIOF->DIR &= ~(1U << 1);      
 
-    // 3. Configure for 32-bit mode (Write 0 to bits 0-2)
-    TIMER0->CFG = 0x00000000;
+    // 4. Enable Alternate Function
+    GPIOF->AFSEL |= (1U << 1); 
 
-    // 4. Configure for Periodic Mode (Write 0x2 to TAMR)
+    // 5. Select Function 7
+    // Clear the Register
+    GPIOF->PCTL &= ~0x000000F0;
+    GPIOF->PCTL |= (0x00000070);
+
+    GPIOF->DEN |= (1U << 1);
+
+    // 2. Disable Timer0B during setup (Clear Bit 8)
+    TIMER0->CTL &= ~(1U << 8);
+
+    // 3. Configure for 16-bit mode (Write 0x04)
+    TIMER0->CFG = 0x4;
+
+    // 4. Configure for PW< Mode (Write 0x2 to TAMR)
     // Bit 1:0 = 0x2 (Periodic)
     // Bit 4 = 1 (Count Up? No, keep 0 for Count Down)
-    TIMER0->TAMR = 0x00000002;
+    TIMER0->TBMR =0x000000A;
 
-    // 5. Set the Load Value (16,000,000 cycles = 1 second)
-    // We want 0.5 seconds -> 8,000,000
-    TIMER0->TAILR = 8000000;
+    // We want 1kHz(1000 cycle per second)
+    // 5. Set the Load Value (16,000,000 / 1000) = 16,000
+    // write 1600 - 1 
+    TIMER0->TBILR = 16000 - 1;
 
-    // 6. Enable Timer 0A Time-Out Interrupt (Bit 0)
-    TIMER0->IMR |= (1U << 0);
+    // 6.We want 50% brightness initially.
+    // Match Value = Load_Value * (1 - Duty_Cycle).
+    // For 50%: 16000 * 0.5 = 8000
+    TIMER0->TBMATCHR = 8000;
 
-    // 7. Enable IRQ 19 in NVIC
-    NVIC_EN0 |= (1U << 19);
+    // 8. Enable Timer0B (Set Bit 0)
+    TIMER0->CTL |= (1U << 8);
 
-    // 8. Enable Timer 0A (Set Bit 0)
-    TIMER0->CTL |= (1U << 0);
+   int brightness = 0;
+    int step = 100;
 
-    // --- Main Loop ---
     while(1) {
-        // The CPU is free! 
-        // The LED is blinking automatically in the background.
+        // 1. Update the Match Register
+        // Remember: Match = Load * (1 - Duty). 
+        // Higher Match = Lower Brightness (LED is OFF longer).
+        // Lower Match = Higher Brightness (LED is ON longer).
+        TIMER0->TBMATCHR = brightness;
+
+        // 2. Change brightness
+        brightness += step;
+
+        // 3. Reverse direction at limits
+        if (brightness >= 15000) step = -100; // Go down
+        if (brightness <= 100)   step = 100;  // Go up
+
+        // 4. Small delay so our eyes can see the fade
+        for(int i=0; i<10000; i++);
     }
 }

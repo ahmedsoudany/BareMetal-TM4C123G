@@ -39,6 +39,12 @@ typedef struct {
     volatile uint32_t RESERVED_3[2];
 
     volatile uint32_t DEN;           // Offset 0x51C
+    volatile uint32_t LOCK;          // Offset 0x520 (Lock)
+    volatile uint32_t CR;            // Offset 0x524 (Commit)
+    volatile uint32_t AMSEL;         // Offset 0x528 (Analog Mode)
+    volatile uint32_t PCTL;          // Offset 0x52C (Port Control) - TARGET ACQUIRED
+    volatile uint32_t ADCCTL;        // Offset 0x530 (ADC Control)
+    volatile uint32_t DMACTL;        // Offset 0x534 (DMA Control)
 } GPIO_Type;
 
 // ============================================================================
@@ -67,7 +73,9 @@ typedef struct {
     volatile uint32_t MIS;           // 0x020: Masked Interrupt Status
     volatile uint32_t ICR;           // 0x024: Interrupt Clear
     volatile uint32_t TAILR;         // 0x028: Timer A Interval Load
-
+    volatile uint32_t TBILR;         // 0x02C (Timer B Load)
+    volatile uint32_t TAMATCHR;      // 0x030
+    volatile uint32_t TBMATCHR;      // 0x034 (Timer B Match)
 } Timer_Type;
 
 // ============================================================================
