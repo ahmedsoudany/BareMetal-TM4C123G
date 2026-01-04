@@ -54,8 +54,15 @@ typedef struct {
 // 1. Define the Base Address for Port F
 #define GPIO_PORTF_BASE  0x40025000
 
+
 // 2. Cast that address to our Struct Pointer
 #define GPIOF  ((GPIO_Type *)GPIO_PORTF_BASE)
+
+// 1. Define the Base Address for Port E
+#define GPIO_PORTE_BASE 0x40024000
+
+// 2. Cast that address to our Struct Pointer
+#define GPIOE   ((GPIO_Type *)GPIO_PORTE_BASE)
 
 // ============================================================================
 // Timer Peripheral Definition
@@ -86,6 +93,32 @@ typedef struct {
 #define TIMER0           ((Timer_Type *)TIMER0_BASE)
 
 
+// ============================================================================
+// ADC Peripheral Definition
+// ============================================================================
+
+typedef struct {
+    volatile uint32_t ACTSS;            // (Active Sample Sequencer) == 0x000
+    volatile uint32_t RIS;              //(Raw Interrupt Status) == 0x004
+    volatile uint32_t IM; 
+    volatile uint32_t ISC;              //(Interrupt Status and Clear) == 0x00C
+    volatile uint32_t OSTAT;            // 0x010: Overflow Status
+    volatile uint32_t EMUX;             // 0x014: Event Multiplexer Select
+    volatile uint32_t USTAT;            // 0x018: Underflow Status
+    volatile uint32_t TSSEL;            // 0x01C: Trigger Source Select
+    volatile uint32_t SSPRI;            // 0x020: Sample Sequencer Priority
+    volatile uint32_t SPC;              // 0x024: Sample Phase Control
+    volatile uint32_t PSSI;             //(Processor Sample Sequence Initiate - The "Go" Button) == 0x028
+
+    volatile uint32_t RESERVED_2[29];   // 0x0A0 - 0x02C = 0X074(116 bytes) ==> 116 / 4 = 29 integers Gap from 0x028 to 0x0A0
+
+    volatile uint32_t SSMUX3;           //(Sample Sequence Input Multiplexer 3) == 0x0A0
+    volatile uint32_t SSCTL3;           //(Sample Sequence Control 3) == 0x0A4
+    volatile uint32_t SSFIFO3;          //(Sample Sequence Result FIFO 3 - Where the data lives) == 0x0A8
+}ADC_Type;
+
+#define ADC0_BASE 0x40038000
+#define ADC0 ((ADC_Type *)ADC0_BASE)
 
 // ============================================================================
 // System Control (Clock) Definition
@@ -98,8 +131,15 @@ typedef struct {
 // System Control for Timers (Base 0x400FE000 + Offset 0x604)
 #define SYSCTL_RCGCTIMER (*((volatile uint32_t *)0x400FE604))
 
+// System Control for ADC 
+// Base 0x400F.E000, Offset 0x638 
+#define SYSCTL_RCGCADC (*((volatile uint32_t *)0x400FE638))
+
 // NVIC Enable Register 0 (Controls IRQ 0 to 31)
 // Base: 0xE000E000, Offset: 0x100
 #define NVIC_EN0 (*((volatile uint32_t *)0xE000E100))
+
+
+
 
 #endif // TM4C123GH6PM_MINIMAL_H
