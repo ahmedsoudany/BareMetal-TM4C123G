@@ -51,16 +51,19 @@ typedef struct {
 // Memory Mapping (The "Pointer Cast" Trick)
 // ============================================================================
 
+
+// Define the Base Address for Port A
+#define GPIO_PORTA_BASE 0x40004000
+// Cast that address to our Struct Pointer
+#define GPIOA ((GPIO_Type *)GPIO_PORTA_BASE )
+
 // 1. Define the Base Address for Port F
 #define GPIO_PORTF_BASE  0x40025000
-
-
 // 2. Cast that address to our Struct Pointer
 #define GPIOF  ((GPIO_Type *)GPIO_PORTF_BASE)
 
 // 1. Define the Base Address for Port E
 #define GPIO_PORTE_BASE 0x40024000
-
 // 2. Cast that address to our Struct Pointer
 #define GPIOE   ((GPIO_Type *)GPIO_PORTE_BASE)
 
@@ -120,6 +123,38 @@ typedef struct {
 #define ADC0_BASE 0x40038000
 #define ADC0 ((ADC_Type *)ADC0_BASE)
 
+
+
+
+// ============================================================================
+// UART Structure
+// ============================================================================
+typedef struct {
+    volatile uint32_t DR;               // 0x000 UARTDR  UART D
+    volatile uint32_t RSR;              // 0x004 UARTRSR/UARTECR  UART Receive Status/Error Clear 
+    volatile uint32_t RESERVED[4];      // Gap 0x018 - 0x008 = 0x10 (16 (bytes) / 4(per integer) = 4)
+    volatile uint32_t FR;               // 0x018 UARTFR  UART Flag
+    volatile uint32_t RESERVED2[1];      // Gap 0x20 - 0x1C = 0x4  (4 / 4 = 1)
+    volatile uint32_t ILPR;             // 0x020 UARTILPR   UART IrDA Low-Power Register 
+    volatile uint32_t IBRD;             // 0x024 UARTIBRD   UART Integer Baud-Rate Divisor 
+    volatile uint32_t FBRD;             // 0x028 UARTFBRD   UART Fractional Baud-Rate Divisor 
+    volatile uint32_t LCRH;             // 0x02C UARTLCRH   UART Line Control 
+    volatile uint32_t CTL;              // 0x030 UARTCTL   UART Control 
+    volatile uint32_t IFLS;             // 0x034 UARTIFLS   UART Interrupt FIFO Level Select 
+    volatile uint32_t IM;               // 0x038 UARTIM RW  UART Interrupt Mask 
+    volatile uint32_t RIS;              // 0x03C UARTRIS RO  UART Raw Interrupt Status 
+    volatile uint32_t MIS;              // 0x040 UARTMIS RO  UART Masked Interrupt Status 
+    volatile uint32_t ICR;              // 0x044 UARTICR W1C  UART Interrupt Clear 
+    volatile uint32_t DMACTL;           // 0x048 UARTDMACTL  UART DMA Control 
+    volatile uint32_t RESERVED3[23];     // Gap 0x0A4 - 0x048 = 0x05C (92 / 4 = 23)
+    volatile uint32_t BITADDR;          // 0x0A4 UART9BITADDR  UART 9-Bit Self Address 
+    volatile uint32_t BITAMASK;         // 0x0A8 UART9BITAMASK  UART 9-Bit Self Address Mask 
+}UART_Type;
+
+
+#define UART0_BASE (0x4000C000)
+#define UART0 ((UART_Type *)UART0_BASE)
+
 // ============================================================================
 // System Control (Clock) Definition
 // ============================================================================
@@ -135,10 +170,14 @@ typedef struct {
 // Base 0x400F.E000, Offset 0x638 
 #define SYSCTL_RCGCADC (*((volatile uint32_t *)0x400FE638))
 
+
+// System Control for UART 
+// Base 0x400F.E000, Offset 0x618
+#define SYSCTL_RCGCUART (*(volatile uint32_t *)0x400FE618)
+
 // NVIC Enable Register 0 (Controls IRQ 0 to 31)
 // Base: 0xE000E000, Offset: 0x100
 #define NVIC_EN0 (*((volatile uint32_t *)0xE000E100))
-
 
 
 
