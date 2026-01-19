@@ -1,81 +1,97 @@
 #include "tm4c123gh6pm_minimal.h"
 
-// --- 1. Send a Single Character ---
-void UART_WriteChar(char c) {
 
-    // Step A: Wait until the Transmit FIFO is not full.
-    // We check the TXFF flag (Bit 5 of UARTFR).
-    // If (FR & 0x20) is not zero, the FIFO is full. We spin/wait.
-    while ( (UART0->FR & (1U << 5)) != 0){
 
-    }
+void CAN_Transmit(uint32_t id, uint8_t data) {
+    // 1. Wait for IF1 to be free (Busy bit is Bit 15)
+    while (CAN0->IF1CRQ & (1U << 15));
 
-    // Step B: Write the character to Data Register
-    UART0->DR = c;
 
+    // 2. Setup Command Mask (We are writing everything)
+    // WRNRD (Write), ARB (Arbitration), Control, DATAA, DATAB
+    CAN0->IF1CMSK = 0xB3;
+
+    // 3. Setup Arbitration (The ID)
+    // ID goes in bits 12:2 of ARB2 for standard 11-bit ID
+    // MsgVal (Bit 15) must be 1
+    // Dir (Bit 13) = 1 (Transmit)
+    CAN0->IF1ARB2 = (id << 2) | (1U << 13) | (1U << 15);
+    CAN0->IF1ARB1 = 0;
+
+
+    // 4. Setup Message Control
+    // DLC = 1 (Sending 1 byte for test)
+    // EOB (End of Buffer) = 1
+    // TXRQ (Transmit Request) = 1 -> Start sending immediately
+    CAN0->IF1MCTL = 1 | (1U << 7) | (1U << 8);
+
+    // 5. Load Data (Just 1 byte for now)
+    CAN0->IF1DA1 = data;
+
+    // 6. Initiate Transfer to Message Object #1
+    CAN0->IF1CRQ = 1;
 }
-
-// --- 2. Send a String ---
-void UART_WriteString(char *str) {
-    // Loop through the string until we hit null terminator '\0'
-    while (*str != '\0') {
-        // Send the current character
-        UART_WriteChar(*str);
-        // Move the pointer to the next character
-        str++;
-    }
-
-}
-
 
 int main() {
-    // --- Initialization ---
+  // --- Initialization --- 
 
-    // 1. Enable Clocks: UART and GPIOA
-    SYSCTL_RCGCUART |= (1U << 0);
-    SYSCTL_RCGCGPIO |= (1U << 0);
-    volatile uint32_t delay;
-    delay = SYSCTL_RCGCUART;
-    (void)delay;
+  // 1. Enable Run Mode Clock Gating Control for CAN0 and PORTB
+  SYSCTL_RCGCCAN |= (1U << 0);
+  volatile uint32_t delay = SYSCTL_RCGCCAN;
+  (void)delay;
 
-    // 2. Configure GPIO Alternate function (PA0=Rx, PA1=Tx)
-    GPIOA->AFSEL |= ((1U << 0) | (1U << 1)); // Enable Alt Function
+  SYSCTL_RCGCGPIO |= (1U << 1);
+  delay = SYSCTL_RCGCGPIO;
+  
+  // --- 2. GPIO_Configuration --- 
+  // A. Enable Alternate Function pins -> PB4, PB5
+  GPIOB->AFSEL |= ((1U << 4) | (1U << 5));
 
-    // Configure PCTL for PA0 and PA1 (Encoding 1 for UART)
-    // Clear first byte (pins 0 and pins 1) then set to 0x11;
-    GPIOA->PCTL &= ~0x000000FF;
-    GPIOA->PCTL |=  0x00000011;
+  // B. SET PB4 and PB5 to CAN0Tx and CAN0Rx
+  // by writing 8 to GPIOPCTL
+  GPIOB->PCTL &= ~0x00FF0000;
+  GPIOB->PCTL |=  0x00880000;
 
-    GPIOA->DEN |= ((1U << 0) | (1U << 1)); // Enable Digital
+  // Digital Enable
+  GPIOB->DEN |= ((1U << 4) | (1U << 5));
 
-   // 3. Configure UART0
-    UART0->CTL &= ~(1U << 0); // Disable UART (Bit 0 is UARTEN)
+  // --- CAN0_Configuration
+  // 3. Enter Init Mod
+  CAN0->CTL |= (1U << 0);
 
-    // Configure the baud rate: 115200
-    // BRD = 16,000,000 / (16 * 115200) = 8.68
-    // int = 8 , fraction  0.68 * 64 + 0.5 = 44
-    UART0->IBRD = 8;
-    UART0->FBRD = 44;
+  // 4. Enable test mode
+  CAN0->CTL |= (1U << 7); 
+  CAN0->TST |= (1U << 4); // Enable the loopback
+  
+  // 5. Configure Bit Timing
+  // (TSEG2=2, TSEG1=3, BRP=0)
+  CAN0->BIT = 0x00000203;
 
-    // Line Control: 8-bit, No Parity, 1 Stop Bit, FIFOs Enabled
-    // WLEN (Bits 6:5) = 0x3 (8 bits)
-    // FEN (Bit 4) = 1 (Enable FIFOs)
-    // FEN (Bit 4) = 1 (Enable FIFOs)
-    UART0->LCRH = 0x70;
+  // 6. Exit init mode
+  CAN0->CTL &= ~(1U << 0);
 
-    // Enable UART, TX, and RX
-    // UARTEN (Bit 0) , TXE (Bit 8), RXE (Bit 9)
-    UART0->CTL |= ((1U << 0) | (1U << 8) | (1U << 9));
+  // Setup LED (PF1)
+  SYSCTL_RCGCGPIO |= (1U << 5); // Port F
+  delay = SYSCTL_RCGCGPIO;
 
+  GPIOF->DIR |= (1U << 1);
+  GPIOF->DEN |= (1U << 1);
 
+  // Send Message
+  CAN_Transmit(0x123, 0xAA);
 
-    // --- Main loop ---
-    while(1) {
-        UART_WriteString("Hello from Tiva C!\r\n");
-        
+  // Wait a tiny bit for the loopback to happen
+  for(int i = 0 ; i < 1000; i++);
 
-        // Delay so we don't flood the terminal
-        for(int i = 0; i < 1000000; i++);
-    }
+  // Check status
+  // If Bit 3 (TXOK) is 1, turn on RED LED
+  if (CAN0->STS & (1U << 3)) {
+    GPIOF->DATA |= (1U << 1); // Success!
+  }
+
+  // Clear the status by reading the register (or writing to it, depending on silicon revision)
+    // Usually reading STS clears the status bits.
+
+  while(1) {}
 
 }

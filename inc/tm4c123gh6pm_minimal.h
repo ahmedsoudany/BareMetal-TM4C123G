@@ -57,6 +57,10 @@ typedef struct {
 // Cast that address to our Struct Pointer
 #define GPIOA ((GPIO_Type *)GPIO_PORTA_BASE )
 
+
+#define GPIO_PORTB_BASE 0x40005000
+#define GPIOB ((GPIO_Type *)GPIO_PORTB_BASE)
+
 // 1. Define the Base Address for Port F
 #define GPIO_PORTF_BASE  0x40025000
 // 2. Cast that address to our Struct Pointer
@@ -124,8 +128,6 @@ typedef struct {
 #define ADC0 ((ADC_Type *)ADC0_BASE)
 
 
-
-
 // ============================================================================
 // UART Structure
 // ============================================================================
@@ -155,6 +157,40 @@ typedef struct {
 #define UART0_BASE (0x4000C000)
 #define UART0 ((UART_Type *)UART0_BASE)
 
+
+
+
+// ============================================================================
+// CAN Structure
+// ============================================================================
+typedef struct {
+    volatile uint32_t CTL;          // 0x000 CAN Control
+    volatile uint32_t STS;          // 0x004 CAN Status
+    volatile uint32_t ERR;          // 0x008 CAN Error Counter
+    volatile uint32_t BIT;          // 0x00C CAN Bit Timing
+    volatile uint32_t INT;          // 0x0010 CAN Interrupt
+    volatile uint32_t TST;          // 0x0014 CAN Test
+    volatile uint32_t BRPE;         // 0x0018 CAN Baud Rate Prescaler Extension
+
+    volatile uint32_t RESERVED[1];  // GAP: 0x20 - 0x1C = 4 bytes 
+
+    volatile uint32_t IF1CRQ;       // 0x020 CAN IF1 Command Request
+    volatile uint32_t IF1CMSK;      // 0x024 CAN IF1 Command Mask
+    volatile uint32_t IF1MSK1;      // 0x028 CAN IF1 Mask 1
+    volatile uint32_t IF1MSK2;      // 0x02C CAN IF1 Mask 2
+    volatile uint32_t IF1ARB1;      // 0x030 CAN IF1 Arbitration 1
+    volatile uint32_t IF1ARB2;      // 0x034 CAN IF1 Arbitration 2
+    volatile uint32_t IF1MCTL;      // 0x038 CAN IF1 Message Control
+    volatile uint32_t IF1DA1;       // 0x03C CAN IF1 Data A1
+    volatile uint32_t IF1DA2;       // 0x040 CAN IF1 Data A2
+    volatile uint32_t IF1DB1;       // 0x044 CAN IF1 Data B1
+    volatile uint32_t IF1DB2;       // 0x048 CAN IF1 Data B2
+
+}CAN_Type;
+
+#define CAN0_BASE 0x40040000
+#define CAN0 ((CAN_Type *)CAN0_BASE)
+
 // ============================================================================
 // System Control (Clock) Definition
 // ============================================================================
@@ -175,9 +211,16 @@ typedef struct {
 // Base 0x400F.E000, Offset 0x618
 #define SYSCTL_RCGCUART (*(volatile uint32_t *)0x400FE618)
 
+
+// System Control for CAN 
+// Base 0x400F.E000, Offset 0x634
+#define SYSCTL_RCGCCAN (*(volatile uint32_t *)0x400FE634)
+
+
 // NVIC Enable Register 0 (Controls IRQ 0 to 31)
 // Base: 0xE000E000, Offset: 0x100
 #define NVIC_EN0 (*((volatile uint32_t *)0xE000E100))
+
 
 
 
