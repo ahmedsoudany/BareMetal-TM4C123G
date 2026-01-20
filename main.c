@@ -32,6 +32,45 @@ void CAN_Transmit(uint32_t id, uint8_t data) {
     CAN0->IF1CRQ = 1;
 }
 
+void CAN_Configure_Receiver(void) {
+  // 1. Setup Command Mask (We are writing everything)
+  // WRNRD (Write), MASK, ARB, CONTRIL, DATAA, DATAB
+  // We need 'MASK' bit (Bit 6) because we are setting up filtering.
+  CAN0->IF2CMSK = 0xF3; // 1111 0011 (WENRD, MASK, ARB, CONTRIL, DATAA, DATAB)
+
+  // 2. Setup Mask (Filter)
+  // We want to accept ONLY ID 0x123
+  // ID goes in bits 12:2
+  // MDIR (Bit 14) = 0 (Don't filter on direction)
+  // MXTD (Bit 15) = 0 (Don't filter on extende ID)
+  CAN0->IF2MSK2 = (0x123 << 2);
+  CAN0->IF2MSK1 = 0;
+
+
+  // 3. Setup Arbitration (The ID we want)
+  // ID = 0x123 (Bits 12:2)
+  // MSGVAL (Bit 15) = 1 (Valid)
+  // DIR (Bit 13) = 0 (Receive)
+  CAN0->IF2ARB2 = (0x123 << 2) | (1U << 15);
+  CAN0->IF2ARB1 = 0;
+
+  // 4. Setup Message Control
+  // UMASK(Bit 12) = 1 (Use the mask we sent above)
+  // EOB (Bit 7) = 1 (End of Buffer)
+  // DLC (Bits 3:0) = 8 (Expect 8 Bytes)
+  CAN0->IF2MCTL = (1U << 12) | (1U << 7) | 8;
+
+  // 5. Initiate Transfer to Message Object #2
+  // This moves all the values from IF2 registers
+  // into the actual Mailbox #2 RAM.
+  CAN0->IF2CRQ = 2;
+
+  // Wait for busy bit to clear (optional but good practice)
+  while (CAN0->IF2CRQ & (1U << 15));
+}
+
+
+
 int main() {
   // --- Initialization --- 
 
@@ -70,28 +109,50 @@ int main() {
   // 6. Exit init mode
   CAN0->CTL &= ~(1U << 0);
 
-  // Setup LED (PF1)
+  // Setup LED (PF2)
   SYSCTL_RCGCGPIO |= (1U << 5); // Port F
   delay = SYSCTL_RCGCGPIO;
 
-  GPIOF->DIR |= (1U << 1);
-  GPIOF->DEN |= (1U << 1);
+  GPIOF->DIR |= (1U << 2);
+  GPIOF->DEN |= (1U << 2);
+
+  // Configure Receiver to catch the message
+  CAN_Configure_Receiver();
 
   // Send Message
   CAN_Transmit(0x123, 0xAA);
+ 
+  // Wait loop
+  while(1) {
 
-  // Wait a tiny bit for the loopback to happen
-  for(int i = 0 ; i < 1000; i++);
+    // A. Check if the Message Object 2 has new data
+    // We query the "New Data" register (NWDA1) which
+    // has one bit per mailbox.
+    // Bit 1 corresponds to Mailbox 2
+     
+    if(CAN0->NWDA1 & (1U << 1)) {
 
-  // Check status
-  // If Bit 3 (TXOK) is 1, turn on RED LED
-  if (CAN0->STS & (1U << 3)) {
-    GPIOF->DATA |= (1U << 1); // Success!
+      // B. FETCH the data from Mailbox 2 into Interface 2
+      // Mask: Read Data (DATAA/DATAB), Read Control (CONTROL), Clear NewDat (CLRINTPND)
+      // 0x73 = WRNRD(0) | MASK(0) | ARB(0) | CTRL(1) | CLRINTPND(0) | NEWDAT(1) | DATAA(1) | DATAB(1)
+      CAN0->IF2CMSK = 0x17;
+      CAN0->IF2CRQ = 2; //Fetch Mailbox 2
+     
+      // Wait for busy bit
+      while (CAN0->IF2CRQ & (1U << 15));
+
+      // C. Read the data from the Interface Register
+      uint32_t received_data = CAN0->IF2DA1;
+
+      // D. Verify and Light Blue LED
+      // If Bit 3 (RXOK) is 1, turn on LED
+      if( (received_data & 0xFF) == 0xAA) {
+      GPIOF->DATA |= (1U << 2); // Blue LED on
+
+      }
+
+    }
+
   }
-
-  // Clear the status by reading the register (or writing to it, depending on silicon revision)
-    // Usually reading STS clears the status bits.
-
-  while(1) {}
 
 }

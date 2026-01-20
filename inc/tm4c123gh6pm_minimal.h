@@ -186,6 +186,41 @@ typedef struct {
     volatile uint32_t IF1DB1;       // 0x044 CAN IF1 Data B1
     volatile uint32_t IF1DB2;       // 0x048 CAN IF1 Data B2
 
+    volatile uint32_t RESERVED_1[13]; // GAP: 0x80 - 0x4C = 52 bytes / 4 per int ==> 13 
+
+    volatile uint32_t IF2CRQ;    // 0x080 CAN IF2 Command Request 
+    volatile uint32_t IF2CMSK;   // 0x084 CAN IF2 Command Mask 
+    volatile uint32_t IF2MSK1;   // 0x088 CAN IF2 Mask 1 
+    volatile uint32_t IF2MSK2;   // 0x08C CAN IF2 Mask 2 
+    volatile uint32_t IF2ARB1;   // 0x090 CAN IF2 Arbitration 1 
+    volatile uint32_t IF2ARB2;   // 0x094 CAN IF2 Arbitration 2 
+    volatile uint32_t IF2MCTL;   // 0x098 CAN IF2 Message Control 
+    volatile uint32_t IF2DA1;    // 0x09C CAN IF2 Data A1 
+    volatile uint32_t IF2DA2;    // 0x0A0 CAN IF2 Data A2 
+    volatile uint32_t IF2DB1;    // 0x0A4 CAN IF2 Data B1 
+    volatile uint32_t IF2DB2;    // 0x0A8 CAN IF2 Data B2 
+
+    volatile uint32_t RESERVED_2[21]; // GAP: 0x100 - 0xAC = 84 bytes / 4 per int ==> 21
+
+    volatile uint32_t TXRQ1;    // 0x100 CAN Transmission Request 1 
+    volatile uint32_t TXRQ2;    // 0x104 CAN Transmission Request 2 
+
+    volatile uint32_t RESERVED_3[6]; // GAP: 0x120 - 0x108 = 24 bytes / 4 per int ==> 6
+           
+    volatile uint32_t NWDA1;     // 0x120 CAN New Data 1 
+    volatile uint32_t NWDA2;     // 0x124 CAN New Data 2 
+
+    volatile uint32_t RESERVED_4[6]; // GAP: 0x140 - 0x128 = 24 bytes / 4 per int ==> 6
+
+               
+    volatile uint32_t MSG1INT;    // 0x140 CAN Message 1 Interrupt Pending 
+    volatile uint32_t MSG2INT;    // 0x144 CAN Message 2 Interrupt Pending 
+
+    volatile uint32_t RESERVED_5[6]; // GAP: 0x160 - 0x148 = 24 bytes / 4 per int ==> 6
+
+    volatile uint32_t MSG1VAL;    // 0x160 CAN Message 1 Valid 
+    volatile uint32_t MSG2VAL;    // 0x164 CAN Message 2 Valid
+
 }CAN_Type;
 
 #define CAN0_BASE 0x40040000
