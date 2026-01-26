@@ -10,6 +10,15 @@ extern uint32_t _ebss;
 // Main function prototype
 extern int main(void);
 
+// --- ADD THESE TWO FUNCTIONS ---
+// The C Library expects these to exist. 
+// We define them as empty because we don't need legacy initialization.
+void _init(void) { }
+void _fini(void) { }
+
+// The C Library Initialization Function (Defined in libc)
+extern void __libc_init_array(void);
+
 // 1. Define the Default Handler (Infinite Loop for unhandled interrupts)
 void Default_Handler(void) {
     while (1);
@@ -21,22 +30,33 @@ void GPIOF_Handler(void) __attribute__((weak, alias("Default_Handler")));
 void Timer0A_Handler(void) __attribute__((weak, alias("Default_Handler")));
 
 // Reset Handler: The first function to run
-void Reset_Handler(void) {
-    // 1. Copy .data section from FLASH to RAM
+void Reset_Handler(void)
+{
+    // 1. Copy .data segment from FLASH to RAM
     uint32_t *pSrc = &_etext;
     uint32_t *pDest = &_data;
-    while (pDest < &_edata) {
+
+    while (pDest < &_edata)
+    {
         *pDest++ = *pSrc++;
     }
 
-    // 2. Zero out .bss section in RAM
+    // 2. Zero fill the .bss segment
     pDest = &_bss;
-    while (pDest < &_ebss) {
+    while (pDest < &_ebss)
+    {
         *pDest++ = 0;
     }
 
-    // 3. Jump to main
+    // 3. CRITICAL: Initialize C Standard Library & C++ Constructors
+    // This sets up 'stdout' and calls the constructor for 'uart'
+    __libc_init_array();
+
+    // 4. Call Main
     main();
+
+    // 5. Trap if main returns
+    while (1);
 }
 
 
